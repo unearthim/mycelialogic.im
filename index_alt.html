@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- === 1. Primary Meta Tags === -->
+    <title>Myceloom: Network Iteration | unearth.im</title>
+    <meta name="title" content="Myceloom: Network Iteration | unearth.im">
+    <meta name="description" content="Myceloom: Network Iteration is an interactive generative artwork from unearth.im. Explore particle life cycles and user-fed energy networks.">
+    <meta name="keywords" content="generative art, interactive art, mycelium, loom, javascript, canvas, digital art, particle system, unearth.im, web4, symbiotic web, digital monument">
+    <meta name="author" content="mycelialogic.com (An unearth.im Project)">
+    <meta name="robots" content="index, follow">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="language" content="English">
+
+    <!--- canonical link --->
+    <link rel="canonical" href="https://unearth.im/art/myceloom-network" />
+
+    <!-- === 2. Webmention Endpoint === -->
+    <link rel="webmention" href="https://webmention.io/unearth.im/webmention" />
+
+    <!-- === 3. Open Graph / Facebook === -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mycelialogic.com/">
+    <meta property="og:title" content="Myceloom: Network Iteration | unearth.im">
+    <meta property="og:description" content="Myceloom: Network Iteration is an interactive generative artwork from unearth.im. Explore particle life cycles and user-fed energy networks.">
+    <meta property="og:image" content="https://mycelialogic.com/og-preview.png">
+    <meta property="og:site_name" content="unearth.im">
+
+    <!-- === 4. Twitter Card === -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://mycelialogic.com/">
+    <meta property="twitter:title" content="Myceloom: Network Iteration | unearth.im">
+    <meta property="twitter:description" content="Myceloom: Network Iteration is an interactive generative artwork from unearth.im. Explore particle life cycles and user-fed energy networks.">
+    <meta property="twitter:image" content="https://mycelialogic.com/og-preview.png">
+
+    <!-- === 5. Favicons === -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Brand Color Meta Tags -->
+    <meta name="theme-color" content="#000000">
+    <meta name="msapplication-TileColor" content="#80ffdb">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Basic styles */
+        html, body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #f0f0f0;
+            overflow: hidden; /* Prevents scrollbars */
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            cursor: none; /* Hide the default cursor */
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        /* UI styles */
+        .ui-container {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            z-index: 10;
+            padding: 0.75rem 1rem;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            max-width: 300px;
+        }
+        .ui-container h1 {
+            font-weight: 500;
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        .ui-container p {
+            font-weight: 300;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #d1d5db; /* gray-300 */
+        }
+        .ui-container p strong {
+            font-weight: 500;
+            color: #fff;
+        }
+        .stats {
+            margin-top: 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #9ca3af; /* gray-400 */
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        #particleCount {
+            font-weight: 600;
+            color: #fff;
+        }
+    </style>
+</head>
+<body class="bg-black">
+
+    <canvas id="mainCanvas"></canvas>
+
+    <div class="ui-container">
+        <h1>Myceloom Network</h1>
+        <p>
+            An interactive generative artwork. 
+            <strong>Click or tap</strong> to introduce new life.
+            <strong>Move your cursor</strong> to provide energy.
+        </p>
+        <div class="stats">
+            Nodes: <span id="particleCount">0</span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+
+            // --- Configuration ---
+            const MAX_PARTICLES = 250;
+            const PARTICLE_LIFESPAN = 1000; // Base lifespan in frames
+            const PARTICLE_ENERGY = 200; // Initial energy
+            const MOUSE_ENERGY_RADIUS = 100; // Radius for mouse energy
+            const ENERGY_TRANSFER_RATE = 2;
+            const ENERGY_DEPLETION_RATE = 0.2;
+            const BRANCH_THRESHOLD = 180; // Energy needed to branch
+            const BRANCH_COST = 80;
+            const BRANCH_CHANCE = 0.005;
+            const MIN_DIST_TO_BRANCH = 30; // Min distance from another particle to branch
+            const MAX_VELOCITY = 1.2;
+            const FRICTION = 0.98;
+            const MOUSE_PARTICLE_ID = 0; // The mouse particle is always particles[0]
+
+            // --- Audio Scales (Even though Tone.js is removed, we keep the logic for potential future use) ---
+            const baseChimeScale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // C Major
+            const branchScale = [392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99]; // G Major (higher)
+
+            let particles = [];
+            const particleCountElement = document.getElementById('particleCount');
+
+            // --- Audio Player (Stub) ---
+            // A placeholder for if we re-introduce audio without a heavy library
+            function playChime(freq) {
+                // console.log(`Playing chime: ${freq}`);
+                // Future: new AudioContext()...
+            }
+            function playBranchChime(freq) {
+                // console.log(`Playing branch chime: ${freq}`);
+                // Future: new AudioContext()...
+            }
+
+            // --- Particle Class ---
+            class Particle {
+                constructor(x, y, type = 'normal') {
+                    this.id = particles.length;
+                    this.x = x;
+                    this.y = y;
+                    this.type = type; // 'normal', 'user', 'mouse'
+                    this.vx = (Math.random() - 0.5) * MAX_VELOCITY;
+                    this.vy = (Math.random() - 0.5) * MAX_VELOCITY;
+                    this.life = PARTICLE_LIFESPAN + (Math.random() * 200);
+                    this.age = 0;
+                    this.energy = PARTICLE_ENERGY;
+                    this.isDying = false;
+
+                    // Set color based on type
+                    if (type === 'mouse') {
+                        this.color = `rgba(255, 255, 255, 0.7)`; // Bright white
+                    } else if (type === 'user') {
+                        this.color = `rgba(167, 139, 250, 1)`; // Vibrant Purple (Tailwind 'violet-400')
+                    } else {
+                        this.color = `rgba(107, 114, 128, 0.5)`; // Muted Gray (Tailwind 'gray-500')
+                    }
+                }
+
+                update(index) {
+                    if (this.isDying) {
+                        this.life -= 4; // Die faster
+                    } else {
+                        // Movement
+                        this.x += this.vx;
+                        this.y += this.vy;
+                        this.vx *= FRICTION;
+                        this.vy *= FRICTION;
+
+                        // Add slight random jitter
+                        this.vx += (Math.random() - 0.5) * 0.1;
+                        this.vy += (Math.random() - 0.5) * 0.1;
+
+                        // Clamp velocity
+                        this.vx = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, this.vx));
+                        this.vy = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, this.vy));
+
+                        // Energy and Age
+                        this.age++;
+                        this.energy -= ENERGY_DEPLETION_RATE;
+
+                        // Check for energy from mouse
+                        if (this.type !== 'mouse') {
+                            const mouseP = particles[MOUSE_PARTICLE_ID];
+                            const dx = this.x - mouseP.x;
+                            const dy = this.y - mouseP.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < MOUSE_ENERGY_RADIUS) {
+                                this.energy += ENERGY_TRANSFER_RATE;
+                                // Create a visual link
+                                ctx.beginPath();
+                                ctx.moveTo(this.x, this.y);
+                                ctx.lineTo(mouseP.x, mouseP.y);
+                                ctx.strokeStyle = `rgba(255, 255, 255, ${0.05 + (1 - dist / MOUSE_ENERGY_RADIUS) * 0.1})`;
+                                ctx.lineWidth = 0.5;
+                                ctx.stroke();
+                            }
+                        }
+
+                        // Branching Logic
+                        if (this.energy > BRANCH_THRESHOLD && 
+                            Math.random() < BRANCH_CHANCE && 
+                            particles.length < MAX_PARTICLES) 
+                        {
+                            // Check if too close to another particle
+                            let tooClose = false;
+                            for (let i = 1; i < particles.length; i++) { // Start from 1 to skip mouse
+                                if (i === index) continue;
+                                const other = particles[i];
+                                const dx = this.x - other.x;
+                                const dy = this.y - other.y;
+                                const dist = Math.sqrt(dx * dx + dy * dy);
+                                if (dist < MIN_DIST_TO_BRANCH) {
+                                    tooClose = true;
+                                    break;
+                                }
+                            }
+
+                            if (!tooClose) {
+                                this.energy -= BRANCH_COST;
+                                spawnNewParticle(this.x, this.y, 'normal');
+                                // Draw branch event
+                                ctx.fillStyle = `rgba(255, 255, 255, 0.8)`;
+                                ctx.beginPath();
+                                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                    }
+
+                    // Check for death
+                    if ((this.life <= 0 || this.energy <= 0) && !this.isDying && this.type !== 'mouse') {
+                        this.isDying = true;
+                        this.life = 100; // Reset life for fade-out
+                    }
+
+                    // Remove if dead
+                    if (this.life <= 0 && this.type !== 'mouse') {
+                        particles.splice(index, 1);
+                    }
+                }
+
+                draw() {
+                    let opacity = 1;
+                    let radius = 1;
+
+                    if (this.type === 'mouse') {
+                        radius = 4;
+                        opacity = 0; // The mouse particle itself is invisible (only its effect is seen)
+                    
+                    } else if (this.type === 'user') {
+                        radius = 2 + (this.energy / PARTICLE_ENERGY) * 2;
+                        opacity = this.isDying ? this.life / 100 : 0.8 + Math.min(this.age / 500, 0.2);
+                        this.color = `rgba(167, 139, 250, ${opacity})`; // Purple
+                    
+                    } else { // normal
+                        radius = 1 + (this.energy / PARTICLE_ENERGY);
+                        opacity = this.isDying ? this.life / 100 : 0.4 + Math.min(this.age / 1000, 0.3);
+                        this.color = `rgba(107, 114, 128, ${opacity})`; // Gray
+                    }
+
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, Math.max(0.5, radius), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // --- Main Functions ---
+
+            function init() {
+                // Create the mouse particle
+                particles.push(new Particle(-100, -100, 'mouse'));
+
+                // Spawn initial particles
+                for (let i = 0; i < 50; i++) {
+                    spawnNewParticle(Math.random() * width, Math.random() * height, 'normal');
+                }
+            }
+
+            function animate() {
+                // Clear canvas with a fade effect
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, width, height);
+
+                // Update and draw particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update(i);
+                    particles[i].draw();
+                }
+
+                // Draw connections
+                drawConnections();
+
+                // Update particle count
+                particleCountElement.textContent = particles.length - 1; // Don't count mouse
+
+                // Loop
+                requestAnimationFrame(animate);
+            }
+
+            function drawConnections() {
+                let connectDist = width * 0.08; // 8% of screen width
+                let connectOpacity = 0.05;
+
+                for (let i = 1; i < particles.length; i++) { // Start from 1 (skip mouse)
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const p1 = particles[i];
+                        const p2 = particles[j];
+
+                        const dx = p1.x - p2.x;
+                        const dy = p1.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < connectDist) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            
+                            let opacity = connectOpacity * (1 - dist / connectDist);
+                            
+                            // Make user connections brighter
+                            if (p1.type === 'user' || p2.type === 'user') {
+                                ctx.strokeStyle = `rgba(196, 181, 253, ${opacity * 2})`; // Light Purple
+                                ctx.lineWidth = 1;
+                            } else {
+                                ctx.strokeStyle = `rgba(107, 114, 128, ${opacity})`; // Gray
+                                ctx.lineWidth = 0.5;
+                            }
+                            
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function spawnNewParticle(x, y, type = 'normal', event = null) {
+                if (particles.length >= MAX_PARTICLES) return;
+                
+                const p = new Particle(x, y, type);
+                particles.push(p);
+
+                // Play sound on spawn (but not for mouse)
+                if (type !== 'mouse') {
+                    const freq = baseChimeScale[Math.floor(Math.random() * baseChimeScale.length)];
+                    playChime(freq);
+                }
+            }
+
+            // --- Event Listeners ---
+
+            // Resize
+            window.addEventListener('resize', () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            });
+
+            // Mouse move
+            function updateMouseParticle(e) {
+                const mouseP = particles[MOUSE_PARTICLE_ID];
+                if (mouseP) {
+                    let x, y;
+                    if (e.touches) {
+                        e.preventDefault();
+                        x = e.touches[0].clientX;
+                        y = e.touches[0].clientY;
+                    } else {
+                        x = e.clientX;
+                        y = e.clientY;
+                    }
+                    mouseP.x = x;
+                    mouseP.y = y;
+
+                    // Randomly play chimes on move
+                    if (Math.random() < 0.05) {
+                        const freq = branchScale[Math.floor(Math.random() * branchScale.length)];
+                        // playBranchChime(freq); // Corrected in previous step (function call removed)
+                    }
+                }
+            }
+
+            // Listen for mouse and touch movements
+            window.addEventListener('mousemove', updateMouseParticle);
+            window.addEventListener('touchmove', updateMouseParticle, { passive: false });
+            window.addEventListener('touchend', (e) => {
+                if (particles[0]) {
+                    particles[0].x = -100;
+                    particles[0].y = -100;
+                }
+            });
+
+            // Listen for clicks and taps to spawn new particles (as 'user' type)
+            function handleUserSpawn(e) {
+                let x, y;
+                if (e.touches) {
+                    x = e.touches[0].clientX;
+                    y = e.touches[0].clientY;
+                } else {
+                    x = e.clientX;
+                    y = e.clientY;
+                }
+                spawnNewParticle(x, y, 'user', e); // Pass 'e'
+            }
+
+            window.addEventListener('click', handleUserSpawn);
+            window.addEventListener('touchstart', (e) => {
+                e.preventDefault(); 
+                handleUserSpawn(e);
+                updateMouseParticle(e);
+            }, { passive: false });
+
+
+            // Start the artwork
+            init();
+            animate();
+        });
+    </script>
+
+</body>
+</html>

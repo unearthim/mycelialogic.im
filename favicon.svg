@@ -1,0 +1,23 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        .bg { fill: #000000; }
+        .node { fill: #80ffdb; } /* Teal */
+        .line { stroke: #5bc0eb; stroke-width: 1.5; } /* Blue */
+        @media (prefers-color-scheme: light) {
+            .bg { fill: #ffffff; }
+            .node { fill: #004d40; } /* Dark Teal */
+            .line { stroke: #0277bd; } /* Dark Blue */
+        }
+    </style>
+    <rect class="bg" width="64" height="64"/>
+    <g transform="translate(32, 32)">
+        <!-- Connections -->
+        <line class="line" x1="0" y1="-20" x2="17.32" y2="10"/>
+        <line class="line" x1="17.32" y1="10" x2="-17.32" y2="10"/>
+        <line class="line" x1="-17.32" y1="10" x2="0" y2="-20"/>
+        <!-- Nodes -->
+        <circle class="node" cx="0" cy="-20" r="5"/>
+        <circle class="node" cx="17.32" cy="10" r="5"/>
+        <circle class="node" cx="-17.32" cy="10" r="5"/>
+    </g>
+</svg>
